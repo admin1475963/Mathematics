@@ -1,0 +1,45 @@
+name: Deploy to gh-pages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v2
+      
+      - name: Install TexLive
+        run: |
+          sudo apt-get update 
+          sudo apt-get install texlive texlive-latex-extra texlive-latex-recommended texlive-lang-cyrillic texlive-fonts-recommended texlive-fonts-extra
+      
+      - name: Compiling tex-files
+        run: find . -maxdepth 3 -name '*.tex' -exec bash -c 'pdflatex -interaction=nonstopmode {} && pdflatex -interaction=nonstopmode {}' \;
+
+      - name: Preparing output directory
+        run: |
+          git clone https://github.com/admin1475963/Mathematics output
+          cd output
+          git config --local user.email "ilhomovmuhammad9001381@noreply.github.com"
+          git config --local user.name "admin1475963-bot"
+          git checkout gh-pages
+          cd ..
+          
+      - name: Cleaning output folder
+        run: find . -type f ! -path './.git/*' ! -name '_config.yml' ! -name '.gitignore' ! -name 'index.md' -exec rm {} \;
+        working-directory: output
+
+      - name: Copying files
+        run: |
+          cp README.md output/README.md
+          cp CONTRIBUTING.md output/CONTRIBUTING.md
+          find . -maxdepth 1 -name '*.pdf' -exec bash -c ' cp {} output/{}' \;
+
+      - name: Commiting and pushing to gh-pages
+        run: |
+          git add *
+          git commit -m "Updating gh-pages"
+          git push https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/admin1475963/Mathematics gh-pages
+        working-directory: output
